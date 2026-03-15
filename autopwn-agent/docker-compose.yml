@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  autopwn-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://autopwn:autopwn@postgres:5432/autopwn
+      - CHROMA_PATH=/data/chroma
+    volumes:
+      - chroma_data:/data/chroma
+    depends_on:
+      - redis
+      - postgres
+      - litellm
+      - chromadb
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: autopwn
+      POSTGRES_PASSWORD: autopwn
+      POSTGRES_DB: autopwn
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    environment:
+      - LITELLM_MASTER_KEY=autopwn-master-key
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  chroma_data:
