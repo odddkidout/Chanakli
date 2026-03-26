@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  autopwn-api:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    depends_on:
+      - redis
+      - postgres
+      - chromadb
+      - litellm
+    volumes:
+      - ./reports:/app/reports
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: autopwn
+      POSTGRES_PASSWORD: autopwn
+      POSTGRES_DB: autopwn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    command: --model gpt-4o --model gpt-4o-mini --drop_params
+
+volumes:
+  pgdata:
