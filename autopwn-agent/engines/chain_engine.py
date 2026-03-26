@@ -50,29 +50,31 @@ class ChainEngine:
             ],
         }
 
-        # Find kill chains (longest paths)
+        # Find kill chains (longest paths) — limit pairs evaluated for performance
         kill_chains: list[dict] = []
-        for source in G.nodes():
-            if G.in_degree(source) == 0:
-                for target in G.nodes():
-                    if G.out_degree(target) == 0 and source != target:
-                        try:
-                            paths = list(nx.all_simple_paths(G, source, target, cutoff=6))
-                            for path in paths:
-                                chain_severity = max(
-                                    (severity_order.get(G.nodes[n].get("severity", "info"), 0) for n in path),
-                                    default=0,
-                                )
-                                kill_chains.append(
-                                    {
-                                        "path": path,
-                                        "length": len(path),
-                                        "score": chain_severity * len(path),
-                                        "steps": [G.nodes[n].get("title", n) for n in path],
-                                    }
-                                )
-                        except Exception:
-                            pass
+        sources = [n for n in G.nodes() if G.in_degree(n) == 0]
+        sinks = [n for n in G.nodes() if G.out_degree(n) == 0]
+        for source in sources[:20]:
+            for target in sinks[:20]:
+                if source == target:
+                    continue
+                try:
+                    paths = list(nx.all_simple_paths(G, source, target, cutoff=6))
+                    for path in paths[:50]:
+                        chain_severity = max(
+                            (severity_order.get(G.nodes[n].get("severity", "info"), 0) for n in path),
+                            default=0,
+                        )
+                        kill_chains.append(
+                            {
+                                "path": path,
+                                "length": len(path),
+                                "score": chain_severity * len(path),
+                                "steps": [G.nodes[n].get("title", n) for n in path],
+                            }
+                        )
+                except Exception:
+                    pass
 
         kill_chains.sort(key=lambda c: c["score"], reverse=True)
         return graph_data, kill_chains[:10]

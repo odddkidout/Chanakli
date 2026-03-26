@@ -44,7 +44,7 @@ class AuditorAgent:
                 except Exception as exc:
                     last_exc = exc
                     await asyncio.sleep(delay)
-                    delay *= 2
+                    delay = min(delay * 2, 30.0)
         raise RuntimeError(f"LLM call failed after {retries} attempts: {last_exc}")
 
     async def plan(

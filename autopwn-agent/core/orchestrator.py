@@ -137,6 +137,14 @@ def _route_after_reflection(state: PentestState) -> str:
     return state.get("status", "done")
 
 
+def _route_after_execution(state: PentestState) -> str:
+    """Route to verification when more tasks remain, or chain_analysis when done."""
+    status = state.get("status", "chaining")
+    if status == "scanning":
+        return "execution"
+    return "verification"
+
+
 def build_graph() -> Any:
     g = StateGraph(PentestState)
 
@@ -151,7 +159,11 @@ def build_graph() -> Any:
     g.set_entry_point("recon")
     g.add_edge("recon", "planning")
     g.add_edge("planning", "execution")
-    g.add_edge("execution", "verification")
+    g.add_conditional_edges(
+        "execution",
+        _route_after_execution,
+        {"execution": "execution", "verification": "verification"},
+    )
     g.add_edge("verification", "chain_analysis")
     g.add_edge("chain_analysis", "reflection")
     g.add_conditional_edges(

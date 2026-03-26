@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import tempfile
 
 from tools.wrappers import BaseToolWrapper
 
@@ -14,7 +16,9 @@ class ArjunWrapper(BaseToolWrapper):
 
     def build_command(self, task: dict) -> list[str]:
         target = task.get("target", "")
-        return ["-u", target, "--json", "-oJ", "/tmp/arjun.json"]
+        fd, out_file = tempfile.mkstemp(prefix="arjun_", suffix=".json")
+        os.close(fd)
+        return ["-u", target, "--json", "-oJ", out_file]
 
     def parse_output(self, output: str) -> dict | None:
         try:

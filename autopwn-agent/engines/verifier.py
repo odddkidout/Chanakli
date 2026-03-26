@@ -15,20 +15,24 @@ class VerificationEngine:
         self._settings = Settings()
 
     async def verify_all(self, findings: list[dict]) -> list[dict]:
-        """Return only findings that pass verification."""
+        """Return all findings annotated with verification status and confidence."""
         verified: list[dict] = []
         for finding in findings:
-            if await self._verify(finding):
-                finding["verified"] = True
-                finding.setdefault("confidence", self._settings.confidence_threshold)
-                verified.append(finding)
+            passed, confidence = await self._verify(finding)
+            finding["confidence"] = finding.get("confidence", confidence)
+            finding["verified"] = passed
+            verified.append(finding)
         return verified
 
-    async def _verify(self, finding: dict) -> bool:
-        """Basic reproducibility check via HTTP probe."""
+    async def _verify(self, finding: dict) -> tuple[bool, float]:
+        """Basic reproducibility check via HTTP probe.
+
+        Returns (passed, confidence) where confidence is low when unverifiable.
+        """
         url = finding.get("url") or finding.get("host")
         if not url:
-            return True  # can't verify, pass through
+            # Cannot verify — keep finding but mark confidence as low
+            return True, 0.3
 
         if not url.startswith("http"):
             url = f"https://{url}"
@@ -43,5 +47,6 @@ class VerificationEngine:
                 except Exception:
                     pass
 
-        threshold = self._settings.reproducibility_runs * self._settings.confidence_threshold
-        return successes >= threshold
+        ratio = successes / max(self._settings.reproducibility_runs, 1)
+        threshold = self._settings.confidence_threshold
+        return ratio >= threshold, ratio

@@ -9,7 +9,10 @@ class ScopeViolationError(Exception):
     """Raised when a command targets a host outside the allowed scope."""
 
 
-_IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_IP_RE = re.compile(
+    r"\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}"
+    r"(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\b"
+)
 _DOMAIN_RE = re.compile(r"\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b")
 
 
