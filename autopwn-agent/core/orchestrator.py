@@ -85,18 +85,21 @@ async def verification_node(state: PentestState) -> dict:
 
         engine = VerificationEngine(scope=state["scope"])
         verified = await engine.verify_all(state.get("findings", []))
-        return {"findings": verified, "status": "chaining"}
+        # Store verified subset separately (plain replacement, not appended)
+        return {"verified_findings": verified, "status": "chaining"}
     except Exception as exc:
-        return {"error": str(exc), "status": "chaining"}
+        return {"error": str(exc), "status": "chaining", "verified_findings": []}
 
 
 async def chain_analysis_node(state: PentestState) -> dict:
-    """Build exploit graph and identify kill chains."""
+    """Build exploit graph and identify kill chains using verified findings."""
     try:
         from engines.chain_engine import ChainEngine
 
         engine = ChainEngine()
-        graph, chains = await engine.analyse(state.get("findings", []))
+        # Prefer verified findings for chain analysis; fall back to all findings
+        findings_for_chain = state.get("verified_findings") or state.get("findings", [])
+        graph, chains = await engine.analyse(findings_for_chain)
         return {"exploit_graph": graph, "kill_chains": chains, "status": "reflecting"}
     except Exception as exc:
         return {"error": str(exc), "status": "reflecting", "exploit_graph": {}, "kill_chains": []}
@@ -188,6 +191,7 @@ async def run_pentest(
         "findings": [],
         "failed_attempts": [],
         "successful_techniques": [],
+        "verified_findings": [],
         "exploit_graph": {},
         "kill_chains": [],
         "current_hypothesis": "",

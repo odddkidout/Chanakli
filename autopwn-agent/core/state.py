@@ -23,6 +23,9 @@ class PentestState(TypedDict):
     failed_attempts: Annotated[list, operator.add]
     successful_techniques: Annotated[list, operator.add]
 
+    # Verified subset (plain list, replaced each iteration)
+    verified_findings: list[dict]
+
     # Chain analysis
     exploit_graph: dict
     kill_chains: list[dict]

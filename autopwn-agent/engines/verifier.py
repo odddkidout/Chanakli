@@ -43,5 +43,5 @@ class VerificationEngine:
                 except Exception:
                     pass
 
-        threshold = self._settings.reproducibility_runs * 2 / 3
+        threshold = self._settings.reproducibility_runs * self._settings.confidence_threshold
         return successes >= threshold
